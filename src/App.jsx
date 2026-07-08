@@ -99,6 +99,18 @@ const notifyBrowser = (body) => {
   } catch {}
 };
 
+// ---- Web Push購読 ----
+const VAPID_PUBLIC_KEY =
+  "BBCf3LgJrfAZ5s0---9ZR-nIFHD-CYMz2BG-sajdnGEzqjKGGtJQVN9pI-5tQoNiP0jbTf-_pj1FCcoHnzFP-9c";
+
+// VAPID鍵(base64url)をPushManagerが要求するUint8Arrayへ変換
+const urlBase64ToUint8Array = (base64) => {
+  const padding = "=".repeat((4 - (base64.length % 4)) % 4);
+  const b64 = (base64 + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const raw = atob(b64);
+  return Uint8Array.from([...raw].map((c) => c.charCodeAt(0)));
+};
+
 const fmtTime = (ms) => {
   const s = Math.max(0, Math.floor(ms / 1000));
   const h = Math.floor(s / 3600);
@@ -255,6 +267,55 @@ export default function App() {
   };
 
   const [schInput, setSchInput] = useState("");
+
+  // ---- プッシュ通知の購読管理 ----
+  const [pushSub, setPushSub] = useState(null); // 購読情報JSON文字列
+  const [pushMsg, setPushMsg] = useState("");
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    // 既存の購読があれば表示に反映
+    (async () => {
+      try {
+        if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
+        const reg = await navigator.serviceWorker.ready;
+        const sub = await reg.pushManager.getSubscription();
+        if (sub) setPushSub(JSON.stringify(sub));
+      } catch {}
+    })();
+  }, []);
+
+  const enablePush = async () => {
+    setPushMsg("");
+    try {
+      if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+        setPushMsg("この環境はプッシュ通知非対応です。iPhoneは「ホーム画面に追加」したアプリから開いてください。");
+        return;
+      }
+      const perm = await Notification.requestPermission();
+      if (perm !== "granted") {
+        setPushMsg("通知が許可されませんでした。iPhoneの設定から本アプリの通知を許可してください。");
+        return;
+      }
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+      });
+      setPushSub(JSON.stringify(sub));
+      setPushMsg("有効化完了。下の購読情報をスケジューラに登録してください。");
+    } catch (e) {
+      setPushMsg("有効化に失敗: " + String(e.message || e));
+    }
+  };
+
+  const copySub = async () => {
+    try {
+      await navigator.clipboard.writeText(pushSub);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {}
+  };
   const addSchedule = () => {
     if (!schInput) return;
     const sch = [...schedules, { id: uid(), at: schInput, done: false }].sort(
@@ -451,6 +512,24 @@ export default function App() {
                   ))}
                 </select>
               </div>
+              <div style={{ ...S.sectionTitle, marginTop: 28 }}>プッシュ通知(アプリを閉じていても届く)</div>
+              <button className="btn-upload" onClick={enablePush}>
+                {pushSub ? "✓ 有効化済み(再発行する)" : "プッシュ通知を有効化"}
+              </button>
+              {pushMsg && <div style={{ fontSize: 12, color: "#C9B08A", lineHeight: 1.7 }}>{pushMsg}</div>}
+              {pushSub && (
+                <>
+                  <textarea readOnly value={pushSub} style={S.subArea} rows={4} />
+                  <button className="btn-add" onClick={copySub}>
+                    {copied ? "コピーした" : "購読情報をコピー"}
+                  </button>
+                  <div style={S.note}>
+                    この購読情報を cron-job.org 等の外部スケジューラに登録すると、
+                    アプリを閉じていても定時通知が届きます(設定手順は別途)。
+                  </div>
+                </>
+              )}
+
               <div style={S.settingRow}>
                 <span>杯数の上限</span>
                 <select
@@ -691,6 +770,17 @@ const S = {
     border: "1px solid #2E241B",
     borderRadius: 10,
     padding: "10px 14px",
+  },
+  subArea: {
+    background: "#1C1510",
+    border: "1px solid #3A2B1C",
+    borderRadius: 10,
+    color: "#8A6F4D",
+    fontSize: 10,
+    fontFamily: "monospace",
+    padding: 10,
+    resize: "none",
+    wordBreak: "break-all",
   },
   settingRow: {
     display: "flex",
