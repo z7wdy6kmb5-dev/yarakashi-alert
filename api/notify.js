@@ -9,7 +9,7 @@
 // 必要な環境変数(Vercelダッシュボードで設定):
 //   VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY / CRON_SECRET
 // ============================================================
-const webpush = require("web-push");
+import webpush from "web-push";
 
 const MSGS = [
   "定時報告や。この間の写真、覚えてるか？",
@@ -20,7 +20,7 @@ const MSGS = [
   "終電の時刻、把握してるか？",
 ];
 
-module.exports = async (req, res) => {
+export default async (req, res) => {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "POST only" });
   }
