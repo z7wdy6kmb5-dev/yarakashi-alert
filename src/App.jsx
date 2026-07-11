@@ -101,7 +101,7 @@ const notifyBrowser = (body) => {
 
 // ---- Web Push購読 ----
 const VAPID_PUBLIC_KEY =
-  "BBCf3LgJrfAZ5s0---9ZR-nIFHD-CYMz2BG-sajdnGEzqjKGGtJQVN9pI-5tQoNiP0jbTf-_pj1FCcoHnzFP-9c";
+  "BD1XZruT68QKr-FZUBEiV8xbqANYBG50lIpRy6cZMhEXgmMY4frNIuIqJA6URmlXLuNhje0YkRfwEYlIh0nO5gY";
 
 // VAPID鍵(base64url)をPushManagerが要求するUint8Arrayへ変換
 const urlBase64ToUint8Array = (base64) => {
