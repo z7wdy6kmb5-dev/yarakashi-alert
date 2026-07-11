@@ -54,6 +54,7 @@ export default async (req, res) => {
     );
     return res.status(200).json({ ok: true });
   } catch (e) {
+    console.error("web-push send error:", e.statusCode, e.body || e.message);
     // 410 Gone = 購読が失効(iOS側で無効化された等) → アプリで再有効化が必要
     return res.status(e.statusCode === 410 ? 410 : 500).json({
       error: e.statusCode === 410 ? "subscription expired: re-enable in app" : String(e.message),
