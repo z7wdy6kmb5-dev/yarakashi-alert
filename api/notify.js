@@ -39,9 +39,10 @@ export default async (req, res) => {
   }
 
   webpush.setVapidDetails(
-    "mailto:notify@yarakashi-alert.local",
-    process.env.VAPID_PUBLIC_KEY,
-    process.env.VAPID_PRIVATE_KEY
+    // Appleのpushサービスはsubの形式に厳しいため実在アドレスを使う
+    "mailto:jackdor.77@gmail.com",
+    process.env.VAPID_PUBLIC_KEY.trim(),
+    process.env.VAPID_PRIVATE_KEY.trim()
   );
 
   try {
@@ -54,7 +55,13 @@ export default async (req, res) => {
     );
     return res.status(200).json({ ok: true });
   } catch (e) {
-    console.error("web-push send error:", e.statusCode, e.body || e.message);
+    console.error(
+      "web-push send error:",
+      e.statusCode,
+      e.body || e.message,
+      "pub:", (process.env.VAPID_PUBLIC_KEY || "").trim().slice(0, 8),
+      "endpoint:", subscription.endpoint.slice(0, 60)
+    );
     // 410 Gone = 購読が失効(iOS側で無効化された等) → アプリで再有効化が必要
     return res.status(e.statusCode === 410 ? 410 : 500).json({
       error: e.statusCode === 410 ? "subscription expired: re-enable in app" : String(e.message),

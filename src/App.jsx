@@ -297,15 +297,22 @@ export default function App() {
         setPushMsg("通知が許可されませんでした。iPhoneの設定から本アプリの通知を許可してください。");
         return;
       }
+      // 購読時は必ずサーバーの現在の公開鍵を使う
+      // (ハードコード値だと古いバンドルのキャッシュで鍵不一致になるため)
+      let key = VAPID_PUBLIC_KEY;
+      try {
+        const r = await fetch("/api/vapid");
+        if (r.ok) key = (await r.json()).key || key;
+      } catch {}
       const reg = await navigator.serviceWorker.ready;
       const existing = await reg.pushManager.getSubscription();
       if (existing) await existing.unsubscribe(); // 鍵を変えて再購読する前に既存分を解除
       const sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+        applicationServerKey: urlBase64ToUint8Array(key),
       });
       setPushSub(JSON.stringify(sub));
-      setPushMsg("有効化完了。下の購読情報をスケジューラに登録してください。");
+      setPushMsg(`有効化完了(鍵: ${key.slice(0, 8)}…)。下の購読情報をコピーしてスケジューラ側も更新してください。`);
     } catch (e) {
       setPushMsg("有効化に失敗: " + String(e.message || e));
     }
