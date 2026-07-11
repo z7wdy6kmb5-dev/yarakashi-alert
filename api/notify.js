@@ -51,7 +51,13 @@ export default async (req, res) => {
       JSON.stringify({
         title: title || "🍺 やらかし警報",
         body: body || MSGS[Math.floor(Math.random() * MSGS.length)],
-      })
+      }),
+      {
+        // iOSは通常優先度だと画面オフ/バックグラウンド時に配信を遅延させるため
+        // highを指定して即時配信させる。TTLは1時間(古い定時通知を溜めて再配信しない)
+        urgency: "high",
+        TTL: 3600,
+      }
     );
     return res.status(200).json({ ok: true });
   } catch (e) {
