@@ -24,7 +24,9 @@ self.addEventListener("push", (event) => {
       body: data.body || "定時報告や。水を一杯挟んどきや。",
       icon: "/icon-192.png",
       badge: "/icon-192.png",
-      tag: "yarakashi-alert", // 同タグは上書き(通知が積み上がらない)
+      // tagは使わない: 同タグの通知が通知センターに残っていると
+      // iOSでは新しい通知がサイレント置き換えになりバナーが出ない
+      // (renotifyはWebKit未対応のため回避不可)
     })
   );
 });
