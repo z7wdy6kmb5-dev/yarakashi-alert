@@ -4,8 +4,13 @@
 // (Vercelのランタイムログに出るのでSafariの開発者ツールが不要)
 // ============================================================
 export default (req, res) => {
-  const from = req.query?.from || "unknown";
-  console.log(`[ping] sw push received from=${from} at=${new Date().toISOString()}`);
+  const { from = "unknown", count, msg } = req.query || {};
+  console.log(
+    `[ping] from=${from}` +
+      (count !== undefined ? ` notifications=${count}` : "") +
+      (msg ? ` error="${msg}"` : "") +
+      ` at=${new Date().toISOString()}`
+  );
   res.setHeader("Cache-Control", "no-store");
   return res.status(204).end();
 };

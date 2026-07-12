@@ -19,19 +19,23 @@ self.addEventListener("push", (event) => {
   } catch {
     data = { body: event.data ? event.data.text() : "" };
   }
+  // 診断用: showNotificationが成功したか/OSに通知が登録されたかをサーバーログに残す
+  // (iOSではSafariの開発者ツールが使えないため)
+  const report = (q) => fetch(`/api/ping?${q}`, { method: "POST" }).catch(() => {});
+
   event.waitUntil(
-    Promise.all([
-      self.registration.showNotification(data.title || "🍺 やらかし警報", {
+    self.registration
+      .showNotification(data.title || "🍺 やらかし警報", {
         body: data.body || "定時報告や。水を一杯挟んどきや。",
         icon: "/icon-192.png",
         badge: "/icon-192.png",
         // tagは使わない: 同タグの通知が通知センターに残っていると
         // iOSでは新しい通知がサイレント置き換えになりバナーが出ない
         // (renotifyはWebKit未対応のため回避不可)
-      }),
-      // 診断用: SWがバックグラウンドで起きたかをサーバーログで確認する
-      fetch("/api/ping?from=push", { method: "POST" }).catch(() => {}),
-    ])
+      })
+      .then(() => self.registration.getNotifications())
+      .then((list) => report(`from=shown&count=${list.length}`))
+      .catch((err) => report(`from=error&msg=${encodeURIComponent(err && err.message)}`))
   );
 });
 
