@@ -20,14 +20,18 @@ self.addEventListener("push", (event) => {
     data = { body: event.data ? event.data.text() : "" };
   }
   event.waitUntil(
-    self.registration.showNotification(data.title || "🍺 やらかし警報", {
-      body: data.body || "定時報告や。水を一杯挟んどきや。",
-      icon: "/icon-192.png",
-      badge: "/icon-192.png",
-      // tagは使わない: 同タグの通知が通知センターに残っていると
-      // iOSでは新しい通知がサイレント置き換えになりバナーが出ない
-      // (renotifyはWebKit未対応のため回避不可)
-    })
+    Promise.all([
+      self.registration.showNotification(data.title || "🍺 やらかし警報", {
+        body: data.body || "定時報告や。水を一杯挟んどきや。",
+        icon: "/icon-192.png",
+        badge: "/icon-192.png",
+        // tagは使わない: 同タグの通知が通知センターに残っていると
+        // iOSでは新しい通知がサイレント置き換えになりバナーが出ない
+        // (renotifyはWebKit未対応のため回避不可)
+      }),
+      // 診断用: SWがバックグラウンドで起きたかをサーバーログで確認する
+      fetch("/api/ping?from=push", { method: "POST" }).catch(() => {}),
+    ])
   );
 });
 
